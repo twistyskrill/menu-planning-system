@@ -15,11 +15,9 @@ def get_dish_type(is_main_dish: bool) -> str:
     return "дополнительное блюдо"
 
 
-def get_total_ingredients(dish: dict, guests: int) -> dict[str, int]:
+from menu_planning.models import Dish
+
+
+def get_total_ingredients(dish: Dish, guests: int) -> dict[str, int]:
     """Рассчитать все ингредиенты для блюда."""
-    ingredients = {}
-
-    for name, grams in dish["ingredients"].items():
-        ingredients[name] = get_ingredient_amount(guests, grams)
-
-    return ingredients
+    return dish.get_total_ingredients(guests)

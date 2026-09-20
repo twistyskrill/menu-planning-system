@@ -10,7 +10,8 @@ from menu_planning.events import (
     is_dish_in_event,
     remove_dish_from_event,
 )
-from menu_planning.storage import load_json, save_json
+from menu_planning.models import Dish, Event
+from menu_planning.storage import load_dishes, load_events, save_events
 from menu_planning.utils import input_int
 
 
@@ -31,48 +32,39 @@ def show_actions() -> None:
     print("8. Выход")
 
 
-def show_events(events: list[dict]) -> None:
+def show_events(events: list[Event]) -> None:
     """Вывести список событий."""
     print("\nСобытия:")
 
     for event in events:
-        print(
-            f"- {event['name']}, дата: {event['date']}, "
-            f"гостей: {event['guests']}"
-        )
+        print(f"- {event}")
 
 
-def show_event_menu(event: dict, dishes: list[dict]) -> None:
+def show_event_menu(event: Event) -> None:
     """Вывести меню события с расчетом ингредиентов."""
     print()
-    print(f"Событие: {event['name']}")
-    print(f"Дата: {event['date']}")
-    print(f"Количество гостей: {event['guests']}")
+    print(f"Событие: {event.name}")
+    print(f"Дата: {event.event_date}")
+    print(f"Количество гостей: {event.guests}")
     print("Меню:")
 
-    for dish_name in event["menu"]:
-        dish = find_dish(dishes, dish_name)
-
-        if dish is None:
-            print(f"- {dish_name}: блюдо не найдено")
-            continue
-
-        print(f"- {dish['name']} ({dish['type']})")
-        ingredients = get_total_ingredients(dish, event["guests"])
+    for dish in event.menu:
+        print(f"- {dish}")
+        ingredients = get_total_ingredients(dish, event.guests)
 
         for name, grams in ingredients.items():
             print(f"  {name}: {grams} г")
 
 
-def show_sorted_dishes(dishes: list[dict]) -> None:
+def show_sorted_dishes(dishes: list[Dish]) -> None:
     """Вывести блюда, отсортированные по названию."""
     print("\nБлюда по алфавиту:")
 
     for dish in sort_dishes_by_name(dishes):
-        print(f"- {dish['name']}")
+        print(f"- {dish.name}")
 
 
-def show_found_dish(dishes: list[dict]) -> None:
+def show_found_dish(dishes: list[Dish]) -> None:
     """Найти и вывести блюдо."""
     dish_name = input("Название блюда: ")
     dish = find_dish(dishes, dish_name)
@@ -81,15 +73,15 @@ def show_found_dish(dishes: list[dict]) -> None:
         print("Блюдо не найдено.")
         return
 
-    print(f"Блюдо: {dish['name']}")
-    print(f"Тип: {dish['type']}")
+    print(f"Блюдо: {dish.name}")
+    print(f"Тип: {dish.dish_type}")
     print("Ингредиенты:")
 
-    for name, grams in dish["ingredients"].items():
-        print(f"- {name}: {grams} г на гостя")
+    for ingredient in dish.ingredients:
+        print(f"- {ingredient}")
 
 
-def check_dish_in_menu(events: list[dict]) -> None:
+def check_dish_in_menu(events: list[Event]) -> None:
     """Проверить наличие блюда в меню события."""
     event_name = input("Название события: ")
     dish_name = input("Название блюда: ")
@@ -100,7 +92,7 @@ def check_dish_in_menu(events: list[dict]) -> None:
         print("Блюда нет в меню события.")
 
 
-def add_dish(events: list[dict], dishes: list[dict]) -> None:
+def add_dish(events: list[Event], dishes: list[Dish]) -> None:
     """Добавить блюдо в меню события."""
     event_name = input("Название события: ")
     dish_name = input("Название блюда: ")
@@ -109,26 +101,26 @@ def add_dish(events: list[dict], dishes: list[dict]) -> None:
         print("Такого блюда нет в списке блюд.")
         return
 
-    if add_dish_to_event(events, event_name, dish_name):
-        save_json(EVENTS_PATH, events)
+    if add_dish_to_event(events, dishes, event_name, dish_name):
+        save_events(EVENTS_PATH, events)
         print("Блюдо добавлено в меню события.")
     else:
         print("Событие не найдено.")
 
 
-def remove_dish(events: list[dict]) -> None:
+def remove_dish(events: list[Event]) -> None:
     """Удалить блюдо из меню события."""
     event_name = input("Название события: ")
     dish_name = input("Название блюда: ")
 
     if remove_dish_from_event(events, event_name, dish_name):
-        save_json(EVENTS_PATH, events)
+        save_events(EVENTS_PATH, events)
         print("Блюдо удалено из меню события.")
     else:
         print("Событие или блюдо не найдено.")
 
 
-def show_event_menu_by_name(events: list[dict], dishes: list[dict]) -> None:
+def show_event_menu_by_name(events: list[Event]) -> None:
     """Вывести меню события по названию."""
     event_name = input("Название события: ")
     event = find_event(events, event_name)
@@ -137,10 +129,10 @@ def show_event_menu_by_name(events: list[dict], dishes: list[dict]) -> None:
         print("Событие не найдено.")
         return
 
-    show_event_menu(event, dishes)
+    show_event_menu(event)
 
 
-def show_statistics(dishes: list[dict]) -> None:
+def show_statistics(dishes: list[Dish]) -> None:
     """Вывести простую статистику по блюдам."""
     main_count = count_dishes_by_type(dishes, "основное блюдо")
     extra_count = count_dishes_by_type(dishes, "дополнительное блюдо")
@@ -155,8 +147,8 @@ def show_statistics(dishes: list[dict]) -> None:
 
 def main() -> None:
     """Запустить сценарий планирования меню."""
-    events = load_json(EVENTS_PATH)
-    dishes = load_json(DISHES_PATH)
+    dishes = load_dishes(DISHES_PATH)
+    events = load_events(EVENTS_PATH, dishes)
 
     while True:
         show_actions()
@@ -176,7 +168,7 @@ def main() -> None:
         elif action == 6:
             remove_dish(events)
         elif action == 7:
-            show_event_menu_by_name(events, dishes)
+            show_event_menu_by_name(events)
         elif action == 8:
             print("Работа программы завершена.")
             break

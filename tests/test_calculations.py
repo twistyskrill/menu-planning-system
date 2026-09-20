@@ -4,6 +4,7 @@ from menu_planning.calculations import (
     get_portions,
     get_total_ingredients,
 )
+from menu_planning.models import Dish, Ingredient
 
 
 def test_get_portions() -> None:
@@ -19,6 +20,19 @@ def test_get_dish_type() -> None:
 
 
 def test_get_total_ingredients() -> None:
-    dish = {"ingredients": {"огурец": 200, "помидор": 150}}
+    dish = Dish(
+        "Овощной салат",
+        "дополнительное блюдо",
+        [
+            Ingredient("огурец", 200),
+            Ingredient("помидор", 150),
+        ],
+    )
 
     assert get_total_ingredients(dish, 4) == {"огурец": 800, "помидор": 600}
+
+
+def test_dish_str() -> None:
+    dish = Dish("Овощной салат", "дополнительное блюдо", [])
+
+    assert str(dish) == "Овощной салат (дополнительное блюдо)"
