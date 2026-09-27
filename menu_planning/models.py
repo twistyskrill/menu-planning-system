@@ -37,19 +37,34 @@ class Dish:
 
     def to_data(self) -> dict:
         """Преобразовать блюдо в словарь для JSON."""
-        ingredients = {}
-
-        for ingredient in self.ingredients:
-            ingredients[ingredient.name] = ingredient.grams_for_guest
-
         return {
             "name": self.name,
             "type": self.dish_type,
-            "ingredients": ingredients,
+            "ingredients": [ingredient.name for ingredient in self.ingredients],
         }
 
     def __str__(self) -> str:
         return f"{self.name} ({self.dish_type})"
+
+
+class User:
+    """Пользователь, который планирует праздничное меню."""
+
+    def __init__(self, user_id: int, name: str, email: str) -> None:
+        self.user_id = user_id
+        self.name = name
+        self.email = email
+
+    def to_data(self) -> dict:
+        """Преобразовать пользователя в словарь для JSON."""
+        return {
+            "id": self.user_id,
+            "name": self.name,
+            "email": self.email,
+        }
+
+    def __str__(self) -> str:
+        return f"{self.name}, email: {self.email}"
 
 
 class Event:
@@ -61,11 +76,13 @@ class Event:
         event_date: str,
         guests: int,
         menu: list[Dish],
+        user: User | None = None,
     ) -> None:
         self.name = name
         self.event_date = event_date
         self.guests = guests
         self.menu = menu
+        self.user = user
 
     def has_dish(self, dish_name: str) -> bool:
         """Проверить, есть ли блюдо в меню."""
@@ -94,8 +111,14 @@ class Event:
             "name": self.name,
             "date": self.event_date,
             "guests": self.guests,
+            "user_id": self.user.user_id if self.user is not None else None,
             "menu": [dish.name for dish in self.menu],
         }
 
     def __str__(self) -> str:
-        return f"{self.name}, дата: {self.event_date}, гостей: {self.guests}"
+        text = f"{self.name}, дата: {self.event_date}, гостей: {self.guests}"
+
+        if self.user is not None:
+            text += f", пользователь: {self.user.name}"
+
+        return text

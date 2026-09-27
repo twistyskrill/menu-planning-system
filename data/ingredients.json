@@ -1,0 +1,70 @@
+[
+  {
+    "name": "огурец",
+    "grams_for_guest": 200
+  },
+  {
+    "name": "помидор",
+    "grams_for_guest": 150
+  },
+  {
+    "name": "зелень",
+    "grams_for_guest": 20
+  },
+  {
+    "name": "курица",
+    "grams_for_guest": 250
+  },
+  {
+    "name": "картофель",
+    "grams_for_guest": 180
+  },
+  {
+    "name": "специи",
+    "grams_for_guest": 10
+  },
+  {
+    "name": "яблоко",
+    "grams_for_guest": 120
+  },
+  {
+    "name": "банан",
+    "grams_for_guest": 100
+  },
+  {
+    "name": "йогурт",
+    "grams_for_guest": 80
+  },
+  {
+    "name": "сыр",
+    "grams_for_guest": 80
+  },
+  {
+    "name": "маслины",
+    "grams_for_guest": 30
+  },
+  {
+    "name": "бисквит",
+    "grams_for_guest": 120
+  },
+  {
+    "name": "крем",
+    "grams_for_guest": 90
+  },
+  {
+    "name": "шоколад",
+    "grams_for_guest": 40
+  },
+  {
+    "name": "клюква",
+    "grams_for_guest": 60
+  },
+  {
+    "name": "сахар",
+    "grams_for_guest": 25
+  },
+  {
+    "name": "вода",
+    "grams_for_guest": 250
+  }
+]

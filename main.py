@@ -10,13 +10,21 @@ from menu_planning.events import (
     is_dish_in_event,
     remove_dish_from_event,
 )
-from menu_planning.models import Dish, Event
-from menu_planning.storage import load_dishes, load_events, save_events
+from menu_planning.models import Dish, Event, User
+from menu_planning.storage import (
+    load_dishes,
+    load_events,
+    load_ingredients,
+    load_users,
+    save_events,
+)
 from menu_planning.utils import input_int
 
 
 EVENTS_PATH = "data/events.json"
 DISHES_PATH = "data/dishes.json"
+INGREDIENTS_PATH = "data/ingredients.json"
+USERS_PATH = "data/users.json"
 
 
 def show_actions() -> None:
@@ -29,7 +37,8 @@ def show_actions() -> None:
     print("5. Добавить блюдо в меню события")
     print("6. Удалить блюдо из меню события")
     print("7. Показать меню события")
-    print("8. Выход")
+    print("8. Показать пользователей")
+    print("9. Выход")
 
 
 def show_events(events: list[Event]) -> None:
@@ -40,12 +49,24 @@ def show_events(events: list[Event]) -> None:
         print(f"- {event}")
 
 
+def show_users(users: list[User]) -> None:
+    """Вывести список пользователей."""
+    print("\nПользователи:")
+
+    for user in users:
+        print(f"- {user}")
+
+
 def show_event_menu(event: Event) -> None:
     """Вывести меню события с расчетом ингредиентов."""
     print()
     print(f"Событие: {event.name}")
     print(f"Дата: {event.event_date}")
     print(f"Количество гостей: {event.guests}")
+
+    if event.user is not None:
+        print(f"Пользователь: {event.user.name}")
+
     print("Меню:")
 
     for dish in event.menu:
@@ -147,8 +168,10 @@ def show_statistics(dishes: list[Dish]) -> None:
 
 def main() -> None:
     """Запустить сценарий планирования меню."""
-    dishes = load_dishes(DISHES_PATH)
-    events = load_events(EVENTS_PATH, dishes)
+    ingredients = load_ingredients(INGREDIENTS_PATH)
+    users = load_users(USERS_PATH)
+    dishes = load_dishes(DISHES_PATH, ingredients)
+    events = load_events(EVENTS_PATH, dishes, users)
 
     while True:
         show_actions()
@@ -170,6 +193,8 @@ def main() -> None:
         elif action == 7:
             show_event_menu_by_name(events)
         elif action == 8:
+            show_users(users)
+        elif action == 9:
             print("Работа программы завершена.")
             break
         else:
