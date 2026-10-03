@@ -10,6 +10,14 @@ def find_event(events: list[Event], event_name: str) -> Event | None:
     return None
 
 
+def find_event_by_id(events: list[Event], event_id: int) -> Event | None:
+    """Найти событие по идентификатору."""
+    for event in events:
+        if event.event_id == event_id:
+            return event
+    return None
+
+
 def add_dish_to_event(
     events: list[Event],
     dishes: list[Dish],

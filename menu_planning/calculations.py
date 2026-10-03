@@ -1,3 +1,6 @@
+from menu_planning.models import Dish
+
+
 def get_portions(guests: int) -> int:
     """Рассчитать количество порций по числу гостей."""
     return guests
@@ -13,9 +16,6 @@ def get_dish_type(is_main_dish: bool) -> str:
     if is_main_dish:
         return "основное блюдо"
     return "дополнительное блюдо"
-
-
-from menu_planning.models import Dish
 
 
 def get_total_ingredients(dish: Dish, guests: int) -> dict[str, int]:

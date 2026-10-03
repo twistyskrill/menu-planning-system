@@ -21,7 +21,9 @@ class Dish:
         name: str,
         dish_type: str,
         ingredients: list[Ingredient],
+        dish_id: int | None = None,
     ) -> None:
+        self.dish_id = dish_id
         self.name = name
         self.dish_type = dish_type
         self.ingredients = ingredients
@@ -37,11 +39,16 @@ class Dish:
 
     def to_data(self) -> dict:
         """Преобразовать блюдо в словарь для JSON."""
-        return {
+        data = {
             "name": self.name,
             "type": self.dish_type,
-            "ingredients": [ingredient.name for ingredient in self.ingredients],
+            "ingredients": [
+                ingredient.name for ingredient in self.ingredients
+            ],
         }
+        if self.dish_id is not None:
+            data["id"] = self.dish_id
+        return data
 
     def __str__(self) -> str:
         return f"{self.name} ({self.dish_type})"
@@ -77,7 +84,9 @@ class Event:
         guests: int,
         menu: list[Dish],
         user: User | None = None,
+        event_id: int | None = None,
     ) -> None:
+        self.event_id = event_id
         self.name = name
         self.event_date = event_date
         self.guests = guests
@@ -107,13 +116,16 @@ class Event:
 
     def to_data(self) -> dict:
         """Преобразовать событие в словарь для JSON."""
-        return {
+        data = {
             "name": self.name,
             "date": self.event_date,
             "guests": self.guests,
             "user_id": self.user.user_id if self.user is not None else None,
             "menu": [dish.name for dish in self.menu],
         }
+        if self.event_id is not None:
+            data["id"] = self.event_id
+        return data
 
     def __str__(self) -> str:
         text = f"{self.name}, дата: {self.event_date}, гостей: {self.guests}"

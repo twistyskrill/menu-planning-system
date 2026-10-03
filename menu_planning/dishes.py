@@ -9,6 +9,14 @@ def find_dish(dishes: list[Dish], dish_name: str) -> Dish | None:
     return None
 
 
+def find_dish_by_id(dishes: list[Dish], dish_id: int) -> Dish | None:
+    """Найти блюдо по идентификатору."""
+    for dish in dishes:
+        if dish.dish_id == dish_id:
+            return dish
+    return None
+
+
 def get_dishes_by_type(dishes: list[Dish], dish_type: str) -> list[Dish]:
     """Вернуть блюда выбранного типа."""
     result = []

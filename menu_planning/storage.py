@@ -88,7 +88,14 @@ def load_dishes(
                 if ingredient is not None:
                     ingredients.append(ingredient)
 
-        dishes.append(Dish(item["name"], item["type"], ingredients))
+        dishes.append(
+            Dish(
+                item["name"],
+                item["type"],
+                ingredients,
+                item.get("id"),
+            )
+        )
 
     return dishes
 
@@ -122,6 +129,7 @@ def load_events(
                 item["guests"],
                 menu,
                 user,
+                item.get("id"),
             )
         )
 

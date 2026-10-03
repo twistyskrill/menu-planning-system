@@ -14,7 +14,12 @@ def test_add_dish_to_event() -> None:
     events = [Event("День рождения", "2026-09-20", 4, [])]
     dishes = [make_dish()]
 
-    result = add_dish_to_event(events, dishes, "День рождения", "Овощной салат")
+    result = add_dish_to_event(
+        events,
+        dishes,
+        "День рождения",
+        "Овощной салат",
+    )
 
     assert result is True
     assert events[0].menu == [dishes[0]]
