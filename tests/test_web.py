@@ -7,7 +7,7 @@ django = pytest.importorskip("django")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "menu_project.settings")
 django.setup()
 
-from django.test import Client  # noqa: E402
+from django.test import Client, override_settings  # noqa: E402
 
 
 client = Client()
@@ -44,3 +44,15 @@ def test_unknown_object_returns_404(url: str) -> None:
     response = client.get(url)
 
     assert response.status_code == 404
+
+
+@pytest.mark.parametrize("url", ["/nonexistent/", "/dishes/abc/"])
+def test_unknown_url_uses_custom_404_page(url: str) -> None:
+    with override_settings(DEBUG=False):
+        response = client.get(url)
+
+    assert response.status_code == 404
+    content = response.content.decode()
+    assert "404 — страница не найдена" in content
+    assert "bootstrap@5.3.3" in content
+    assert '<a href="/" class="btn btn-primary">На главную</a>' in content

@@ -46,3 +46,15 @@ def index(request):
 </section>
 """
     return HttpResponse(page("Планирование праздничного меню", content))
+
+
+def page_not_found(request, exception):
+    """Показать общую страницу 404 для неизвестного адреса или Http404."""
+    content = """
+<section class="p-5 bg-white rounded-3 shadow-sm">
+  <h1 class="text-danger">404 — страница не найдена</h1>
+  <p class="lead">Проверьте адрес или вернитесь на главную.</p>
+  <a href="/" class="btn btn-primary">На главную</a>
+</section>
+"""
+    return HttpResponse(page("404 — страница не найдена", content), status=404)
