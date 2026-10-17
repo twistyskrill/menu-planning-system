@@ -1,0 +1,9 @@
+body { min-height: 100vh; display: flex; flex-direction: column; }
+main { flex: 1; }
+.menu-logo { margin-right: .5rem; vertical-align: middle; }
+.dish-card { border-left: 4px solid #28764a; border-radius: 8px; }
+.dish-card a { color: #215b3b; }
+.event-status { font-weight: 600; padding: .5em .8em; }
+.event-status-ready { border: 1px solid #146c43; }
+.event-status-empty { border: 1px solid #495057; }
+.site-footer { color: #59616a; border-top: 1px solid #dee2e6; }

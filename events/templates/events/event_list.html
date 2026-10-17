@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}События — Праздничное меню{% endblock %}
+{% block content %}
+  <h1>События</h1>
+  <p>Всего событий: {{ events|length }}</p>
+  {% for row in events %}
+    <article class="card mb-3">
+      <div class="card-body">
+        <h2 class="h5"><a href="{% url 'events:event_detail' row.event.event_id %}">{{ row.event.name|default:"Без названия" }}</a></h2>
+        <p>ID: {{ row.event.event_id }} · Дата: {{ row.date|date:"d.m.Y" }} · Гостей: {{ row.event.guests }}</p>
+        <p>Пользователь: {{ row.event.user.name|default:"не указан" }}</p>
+        {% include "events/includes/event_status.html" with event=row.event %}
+      </div>
+    </article>
+  {% empty %}
+    <p>События не найдены.</p>
+  {% endfor %}
+{% endblock %}

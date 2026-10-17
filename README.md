@@ -2,7 +2,7 @@
 
 Учебное приложение для планирования событий, праздничных меню и количества
 ингредиентов. Консольная версия из ПР3 дополнена базовым веб-интерфейсом на
-Django в рамках ПР5.
+Django в рамках ПР5 и переведена на Django-шаблоны в ПР6.
 
 ## Возможности
 
@@ -54,7 +54,7 @@ Django в рамках ПР5.
 `/dishes/999/` и `/events/999/` возвращают страницу «не найдено» и HTTP 404.
 
 Для неизвестных адресов настроен общий `handler404`, вызывающий
-`homepage.views.page_not_found()`. Страница использует общий HTML-каркас,
+`homepage.views.page_not_found()` и шаблон `templates/404.html`. Страница использует общий HTML-каркас,
 Bootstrap и кнопку возврата на главную. Для проверки установите `DEBUG = False`
 в `menu_project/settings.py` и откройте `/nonexistent/` или `/dishes/abc/`.
 После проверки верните `DEBUG = True`: в режиме отладки Django показывает
@@ -72,7 +72,8 @@ menu-planning-system/
 │   ├── urls.py
 │   ├── asgi.py
 │   └── wsgi.py
-├── homepage/              # главная страница и общий HTML-каркас
+├── templates/            # base.html, 404.html, includes/navigation.html
+├── homepage/              # главная страница, CSS, JavaScript и логотип
 │   ├── urls.py
 │   └── views.py
 ├── dishes/                # список и карточки блюд
@@ -152,6 +153,42 @@ flake8 . --exclude=.venv,venv,migrations
 двухуровневая маршрутизация, view-функции, HTML-страницы, Bootstrap-навигация и
 отображение данных предметной области из JSON.
 
-Следующие этапы: Django-шаблоны и наследование `base.html`, статические файлы,
-Django ORM, база данных, формы создания и редактирования, регистрация и
-авторизация пользователей.
+В ПР6 все веб-представления используют `render()` и передают данные через
+контекст. HTML вынесен в Django Template Language; функция `page()` удалена.
+Общий `templates/base.html` задаёт блоки `title` и `content`, Bootstrap,
+подвал и статику. Дочерние страницы используют `extends`, а навигация,
+карточки блюд и статус меню подключаются через `include`.
+
+Шаблоны приложений:
+- `homepage/templates/homepage/index.html`;
+- `dishes/templates/dishes/dish_list.html` и `dish_detail.html`;
+- `dishes/templates/dishes/includes/dish_card.html`;
+- `events/templates/events/event_list.html` и `event_detail.html`;
+- `events/templates/events/includes/event_status.html`.
+
+Циклы `for` выводят коллекции, `empty` обрабатывает пустые списки, `if`
+показывает отсутствие объекта и состояние меню. Статус «Меню составлено» /
+«Меню не составлено» определяется существующим `Event.menu`: у нашей модели
+нет отмены бронирования из примера Roomly. Модели и JSON-формат сохранены.
+Расчёты ингредиентов выполняются в Python, а не в шаблонах.
+
+В `urls.py` приложений настроены `app_name`; ссылки используют `{% url %}`
+с пространствами имён `homepage`, `dishes`, `events` и прежними именами
+маршрутов (`homepage:index`, `dishes:dishes`, `dishes:dish_detail`,
+`events:events`, `events:event_detail`). Адреса страниц сохранены.
+
+Фильтры `length`, `default` и `date` выводят количество элементов,
+значения по умолчанию и дату в формате ДД.ММ.ГГГГ. ISO-даты из JSON
+преобразуются во view в `date` без изменения предметной модели.
+Отсутствующий объект передаётся в шаблон как `None`, обрабатывается через
+`if` / `else` и возвращается с HTTP 404.
+
+Статические файлы находятся в `homepage/static/homepage/`:
+`css/style.css` оформляет карточки, статусы и подвал, `img/logo.svg`
+содержит логотип с тарелкой, `js/main.js` выводит текущий год в подвале.
+Все ресурсы подключены через `{% load static %}` и `{% static %}`.
+Проверка поиска: `python manage.py findstatic homepage/img/logo.svg`.
+
+Данные предметной области по-прежнему хранятся в JSON. Django ORM и формы
+ещё не используются; работа с базой данных, формы создания и редактирования,
+регистрация и авторизация относятся к следующим практическим работам.

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Главная — Праздничное меню{% endblock %}
+{% block content %}
+  <section class="p-5 bg-white rounded-3 shadow-sm">
+    <h1 class="display-5">Система планирования праздничного меню</h1>
+    <p class="lead">Планируйте события, просматривайте блюда и рассчитывайте ингредиенты для нужного количества гостей.</p>
+    <a href="{% url 'dishes:dishes' %}" class="btn btn-primary me-2">Блюда</a>
+    <a href="{% url 'events:events' %}" class="btn btn-success">События</a>
+  </section>
+{% endblock %}

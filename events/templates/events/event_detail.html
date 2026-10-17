@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% if event %}{{ event.name }}{% else %}Событие не найдено{% endif %} — Праздничное меню{% endblock %}
+{% block content %}
+  {% if event %}
+    <article class="card shadow-sm">
+      <div class="card-body">
+        <h1 class="h3">{{ event.name }}</h1>
+        <p><strong>ID:</strong> {{ event.event_id }}</p>
+        <p><strong>Дата:</strong> {{ event_date|date:"d.m.Y" }}</p>
+        <p><strong>Количество гостей:</strong> {{ event.guests }}</p>
+        <p><strong>Пользователь:</strong> {{ event.user.name|default:"не указан" }}</p>
+        <p>{% include "events/includes/event_status.html" %}</p>
+        <h2 class="h5">Меню и количество ингредиентов</h2>
+        <ul class="list-group">
+          {% for item in menu %}
+            <li class="list-group-item">
+              <a href="{% url 'dishes:dish_detail' item.dish.dish_id %}">{{ item.dish.name }}</a>
+              <div class="small text-body-secondary">
+                {% for name, grams in item.ingredients.items %}{{ name }} — {{ grams }} г{% if not forloop.last %}, {% endif %}{% empty %}Ингредиенты не указаны.{% endfor %}
+              </div>
+            </li>
+          {% empty %}
+            <li class="list-group-item">В меню пока нет блюд.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </article>
+  {% else %}
+    <h1 class="text-danger">Событие не найдено</h1>
+    <p>Событие с указанным идентификатором отсутствует.</p>
+  {% endif %}
+  <a href="{% url 'events:events' %}" class="btn btn-outline-secondary mt-3">Вернуться к списку событий</a>
+{% endblock %}

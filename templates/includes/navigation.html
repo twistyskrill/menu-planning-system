@@ -1,0 +1,14 @@
+{% load static %}
+<nav class="navbar navbar-expand-md bg-dark" data-bs-theme="dark" aria-label="Основная навигация">
+  <div class="container flex-wrap">
+    <a class="navbar-brand" href="{% url 'homepage:index' %}">
+      <img class="menu-logo" src="{% static 'homepage/img/logo.svg' %}" alt="Праздничное меню" width="40" height="40">
+      Праздничное меню
+    </a>
+    <div class="navbar-nav flex-row gap-3">
+      <a class="nav-link" href="{% url 'homepage:index' %}">Главная</a>
+      <a class="nav-link" href="{% url 'dishes:dishes' %}">Блюда</a>
+      <a class="nav-link" href="{% url 'events:events' %}">События</a>
+    </div>
+  </div>
+</nav>
