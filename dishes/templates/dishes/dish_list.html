@@ -2,6 +2,11 @@
 {% block title %}Блюда — Праздничное меню{% endblock %}
 {% block content %}
   <h1>Блюда</h1>
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-5"><label for="q">Название (с учётом регистра)</label><input id="q" name="q" value="{{ q }}" class="form-control"></div>
+    <div class="col-md-4"><label for="type">Тип блюда</label><select id="type" name="type" class="form-select"><option value="">Все типы</option>{% for item in categories %}<option value="{{ item.dish_type }}" {% if selected_type == item.dish_type %}selected{% endif %}>{{ item.dish_type }}</option>{% endfor %}</select></div>
+    <div class="col-md-3 align-self-end"><button class="btn btn-primary">Найти</button> <a href="{% url 'dishes:dishes' %}">Сбросить</a></div>
+  </form>
   <p>Всего блюд: {{ dishes|length }}</p>
   {% for dish in dishes %}
     {% include "dishes/includes/dish_card.html" %}

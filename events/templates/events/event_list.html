@@ -2,6 +2,12 @@
 {% block title %}События — Праздничное меню{% endblock %}
 {% block content %}
   <h1>События</h1>
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-4"><label for="date">Дата</label><input id="date" name="date" type="date" value="{{ selected_date }}" class="form-control"></div>
+    <div class="col-md-4"><label for="min_guests">Минимум гостей</label><input id="min_guests" name="min_guests" type="number" min="0" max="1000000" value="{{ min_guests }}" class="form-control"></div>
+    <div class="col-md-4 align-self-end"><button class="btn btn-primary">Найти</button> <a href="{% url 'events:events' %}">Сбросить</a></div>
+  </form>
+  {% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
   <p>Всего событий: {{ events|length }}</p>
   {% for row in events %}
     <article class="card mb-3">

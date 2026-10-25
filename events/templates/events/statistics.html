@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Статистика — Праздничное меню{% endblock %}
+{% block content %}
+<h1>Статистика праздничного меню</h1>
+<div class="card mb-3"><div class="card-body">
+  <p>Блюд: {{ dish_totals.total }} · Типов блюд: {{ dish_totals.types }}</p>
+  <p>Событий: {{ event_totals.total }} · Всего гостей: {{ event_totals.guests }}</p>
+  <p>Гостей на событие: минимум {{ event_totals.minimum }}, максимум {{ event_totals.maximum }}, в среднем {{ event_totals.average|floatformat:1 }}</p>
+</div></div>
+<h2 class="h4">Блюда по типам</h2>
+<ul>{% for item in categories %}<li>{{ item.dish_type }}: {{ item.total }}</li>{% empty %}<li>Данные отсутствуют.</li>{% endfor %}</ul>
+<h2 class="h4">Использование блюд в меню</h2>
+<div class="table-responsive"><table class="table"><thead><tr><th scope="col">Блюдо</th><th scope="col">Число событий</th></tr></thead><tbody>
+{% for item in popularity %}<tr><td><a href="{% url 'dishes:dish_detail' item.id %}">{{ item.name }}</a></td><td>{{ item.total }}</td></tr>{% empty %}<tr><td colspan="2">Данные отсутствуют.</td></tr>{% endfor %}
+</tbody></table></div>
+<h2 class="h4">Блюда для нескольких праздников</h2>
+<p>Включены в меню как минимум двух событий.</p>
+<ul>{% for item in frequent %}<li>{{ item.name }}: {{ item.total }}</li>{% empty %}<li>Таких блюд пока нет.</li>{% endfor %}</ul>
+{% endblock %}

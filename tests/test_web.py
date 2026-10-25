@@ -23,7 +23,7 @@ def test_main_pages_are_available(url: str) -> None:
     assert 'name="viewport"' in content
 
 
-def test_dish_detail_uses_json_data() -> None:
+def test_dish_detail_uses_project_data() -> None:
     response = client.get("/dishes/1/")
 
     assert response.status_code == 200

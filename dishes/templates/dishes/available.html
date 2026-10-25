@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Подбор блюд — Праздничное меню{% endblock %}
+{% block content %}
+<h1>Подбор блюд на дату</h1>
+<p>Найдите блюда, которые ещё не включены в меню событий на выбранную дату. Это помогает разнообразить праздничное меню.</p>
+<form method="get" class="mb-3">
+  <label for="date">Дата события</label>
+  <input class="form-control mb-2" id="date" name="date" type="date" value="{{ selected_date }}" required>
+  <button class="btn btn-primary">Подобрать блюда</button>
+</form>
+{% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
+{% if searched %}
+  {% for dish in dishes %}{% include "dishes/includes/dish_card.html" %}
+  {% empty %}<p>Подходящие блюда не найдены.</p>{% endfor %}
+  {% if page > 1 %}<a href="?date={{ selected_date|urlencode }}&amp;page={{ previous }}">Назад</a>{% endif %}
+  {% if has_next %}<a href="?date={{ selected_date|urlencode }}&amp;page={{ next }}">Далее</a>{% endif %}
+{% endif %}
+{% endblock %}
