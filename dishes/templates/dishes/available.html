@@ -12,7 +12,6 @@
 {% if searched %}
   {% for dish in dishes %}{% include "dishes/includes/dish_card.html" %}
   {% empty %}<p>Подходящие блюда не найдены.</p>{% endfor %}
-  {% if page > 1 %}<a href="?date={{ selected_date|urlencode }}&amp;page={{ previous }}">Назад</a>{% endif %}
-  {% if has_next %}<a href="?date={{ selected_date|urlencode }}&amp;page={{ next }}">Далее</a>{% endif %}
+  {% include "includes/pagination.html" %}
 {% endif %}
 {% endblock %}

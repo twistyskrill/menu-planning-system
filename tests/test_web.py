@@ -1,15 +1,11 @@
-import os
-
 import pytest
 
-
-django = pytest.importorskip("django")
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "menu_project.settings")
-django.setup()
-
-from django.test import Client, override_settings  # noqa: E402
+from dishes.models import Dish
+from events.models import Event
+from django.test import Client, override_settings
 
 
+pytestmark = pytest.mark.usefixtures("seeded_orm")
 client = Client()
 
 
@@ -58,48 +54,40 @@ def test_unknown_url_uses_custom_404_page(url: str) -> None:
     assert '<a href="/" class="btn btn-primary">На главную</a>' in content
 
 
-@pytest.mark.parametrize(
-    "url,loader,message",
-    [
-        ("/dishes/", "dishes.views._load_dishes", "Блюда не найдены."),
-        ("/events/", "events.views._load_events", "События не найдены."),
-    ],
-)
-def test_empty_lists(url, loader, message):
-    from unittest.mock import patch
-
-    with patch(loader, return_value=[]):
-        response = client.get(url)
+@pytest.mark.parametrize("url,model,message", [
+    ("/dishes/", Dish, "Блюда не найдены."),
+    ("/events/", Event, "События не найдены."),
+])
+def test_empty_lists(url, model, message):
+    Event.objects.all().delete()
+    model.objects.all().delete()
+    response = client.get(url)
     assert response.status_code == 200
     assert message in response.content.decode()
 
 
 def test_empty_menu_status_and_missing_user():
-    from unittest.mock import patch
-    from menu_planning.models import Event
-
-    event = Event("Праздник", "2026-10-17", 4, [], event_id=1)
-    with patch("events.views._load_events", return_value=[event]):
-        for url in ["/events/", "/events/1/"]:
-            response = client.get(url)
-            content = response.content.decode()
-            assert response.status_code == 200
-            assert "Меню не составлено" in content
-            assert "не указан" in content
-            assert "17.10.2026" in content
+    event = Event.objects.create(
+        name="Праздник", event_date="2026-10-17", guests=4
+    )
+    for url in ["/events/", f"/events/{event.pk}/"]:
+        response = client.get(url)
+        content = response.content.decode()
+        assert response.status_code == 200
+        assert "Меню не составлено" in content
+        assert "не указан" in content
+        assert "17.10.2026" in content
     assert "В меню пока нет блюд." in content
 
 
 def test_templates_escape_dish_name():
-    from unittest.mock import patch
-    from menu_planning.models import Dish
-
-    dish = Dish("<script>alert(1)</script>", "салат", [], dish_id=1)
-    with patch("dishes.views._load_dishes", return_value=[dish]):
-        for url in ["/dishes/", "/dishes/1/"]:
-            content = client.get(url).content.decode()
-            assert "&lt;script&gt;alert(1)&lt;/script&gt;" in content
-            assert "<script>alert(1)</script>" not in content
+    dish = Dish.objects.create(
+        name="<script>alert(1)</script>", dish_type="салат"
+    )
+    for url in ["/dishes/", f"/dishes/{dish.pk}/"]:
+        content = client.get(url).content.decode()
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in content
+        assert "<script>alert(1)</script>" not in content
 
 
 def test_named_routes_and_shared_static():

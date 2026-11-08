@@ -3,7 +3,7 @@
 Учебное приложение для планирования событий, праздничных меню и количества
 ингредиентов. Консольная версия из ПР3 дополнена базовым веб-интерфейсом на
 Django в рамках ПР5 и переведена на Django-шаблоны в ПР6.
-В ПР7 веб-приложение получает данные из SQLite через стандартный `sqlite3`.
+В ПР9 веб-приложение работает с SQLite через Django ORM.
 
 ## Возможности
 
@@ -18,9 +18,9 @@ Django в рамках ПР5 и переведена на Django-шаблоны 
 - подбор блюд, ещё не включённых в меню на выбранную дату;
 - статистика гостей, категорий и использования блюд.
 
-Изменение данных через веб-формы и перенос сущностей в Django ORM
-отложены до следующих практических работ. JSON и консольный интерфейс ПР3
-сохранены; веб-приложение читает отдельную базу `data/menu.sqlite`.
+Редактирование данных доступно в Django Admin. Консольная версия
+по-прежнему работает с JSON. Исходная база ПР7 хранится в `data/menu.sqlite`
+и используется для переноса записей в локальную `db.sqlite3`.
 
 ## Технологии
 
@@ -28,7 +28,7 @@ Django в рамках ПР5 и переведена на Django-шаблоны 
 - Django 5.2;
 - HTML и Bootstrap 5.3;
 - JSON;
-- SQLite и стандартный модуль Python sqlite3;
+- SQLite и Django ORM;
 - pytest;
 - flake8.
 
@@ -50,9 +50,9 @@ Django в рамках ПР5 и переведена на Django-шаблоны 
 | URL | View-функция | Назначение |
 | --- | --- | --- |
 | `/` | `homepage.views.index()` | описание проекта и навигация |
-| `/dishes/` | `dishes.views.dishes()` | каталог SQLite, поиск по `q` и `type` |
+| `/dishes/` | `dishes.views.dishes()` | поиск по `q`, `type` и `ingredient`, сортировка `sort` |
 | `/dishes/<int:dish_id>/` | `dishes.views.dish_detail()` | карточка блюда и ингредиенты |
-| `/events/` | `events.views.events()` | события SQLite, фильтры `date` и `min_guests` |
+| `/events/` | `events.views.events()` | фильтры `date` и `min_guests`, поиск `q`, сортировка `sort`, пагинация |
 | `/dishes/available/` | `dishes.views.available()` | подбор по `date`, страницы `page` |
 | `/events/statistics/` | `events.views.statistics()` | итоги, категории, популярность |
 | `/events/<int:event_id>/` | `events.views.event_detail()` | событие, пользователь, меню и расчёты |
@@ -126,10 +126,11 @@ pip install -r requirements.txt
 
 На Windows команда активации: `.venv\Scripts\activate`.
 
-Создайте базу предметной области из JSON и проверьте проект:
+Примените миграции и перенесите данные из исходной базы ПР7:
 
 ```bash
-python -m db.import_json
+python manage.py migrate
+python manage.py import_pr7
 python manage.py check
 python manage.py runserver
 ```
@@ -147,14 +148,17 @@ python main.py
 ## Проверка
 
 ```bash
+python manage.py check
+python manage.py showmigrations
+python manage.py makemigrations --check --dry-run
 pytest -v
-flake8 . --extend-exclude=.venv,venv,tmp,output
+flake8 . --extend-exclude=.venv,venv,tmp,output,migrations
 ```
 
-Тесты проверяют прежнюю предметную логику, загрузку JSON, доступность страниц,
-динамические URL, расчёт ингредиентов и ответы 404. Проверки ПР7 охватывают
-повторный импорт, откат транзакции при ошибке, внешние ключи, NULL,
-параметризованный поиск, пагинацию, статистику и чтение изменений SQLite.
+Тесты Django используют отдельную временную базу. Они проверяют перенос
+данных, обратные связи, сохранение расчётов и маршрутов, фильтры,
+пагинацию, статистику и пустые результаты. Отдельные тесты проверяют
+консольную логику и архивный импорт ПР7.
 
 ## Текущее состояние и дальнейшее развитие
 
@@ -198,76 +202,79 @@ flake8 . --extend-exclude=.venv,venv,tmp,output
 Все ресурсы подключены через `{% load static %}` и `{% static %}`.
 Проверка поиска: `python manage.py findstatic homepage/img/logo.svg`.
 
-В ПР7 данные веб-приложения хранятся в SQLite. Формы создания и редактирования,
-Django ORM, регистрация и авторизация относятся к следующим работам.
+## ПР9 Модели и связи
 
-## ПР7 База данных и SQL
-
-Основные файлы: `sql/schema.sql` создаёт таблицы и индексы;
-`sql/queries.sql` содержит 12 именованных запросов; `db/database.py`
-открывает соединения с `sqlite3.Row`, включает внешние ключи и закрывает
-соединения; `db/import_json.py` переносит JSON; `db/repository.py`
-преобразует результаты SQL в прежние классы предметной области.
-Каталог SQL служит единственным источником запросов для веб-приложения.
-
-| Таблица | Поля и ограничения |
+| Модель | Поля и связи |
 | --- | --- |
-| users | id INTEGER PK, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL |
-| ingredients | id INTEGER PK, name TEXT UNIQUE NOT NULL, grams_for_guest INTEGER > 0 |
-| dishes | id INTEGER PK, name TEXT UNIQUE NOT NULL, dish_type TEXT NOT NULL |
-| events | id INTEGER PK, name TEXT NOT NULL, event_date TEXT ISO-дата, guests INTEGER > 0, user_id INTEGER FK NULL |
-| dish_ingredients | dish_id FK, ingredient_id FK, grams_for_guest INTEGER > 0; составной PK |
-| event_dishes | event_id FK, dish_id FK; составной PK |
+| `dishes.Ingredient` | уникальное имя, положительная масса на гостя |
+| `dishes.Dish` | уникальное имя, тип, ингредиенты через `DishIngredient` |
+| `dishes.DishIngredient` | блюдо, ингредиент, норма для конкретного блюда |
+| `events.Organizer` | имя, уникальная почта |
+| `events.Event` | название, дата, положительное число гостей, организатор, меню |
+| `events.EventDish` | уникальная пара события и блюда |
 
-Связи: пользователь 1:N события; события M:N блюда через event_dishes;
-блюда M:N ингредиенты через dish_ingredients. Норма массы хранится в связи
-с блюдом, что позволяет одному ингредиенту иметь разные нормы в рецептах.
-Отсутствующий организатор задаётся NULL. При удалении пользователя
-события сохраняются с NULL; при удалении события удаляются связи его меню.
-Отдельная `db.sqlite3` предназначена для служебных приложений Django;
-предметные таблицы не используют ORM и миграции.
+Первичные ключи создаёт Django. При удалении организатора его события
+сохраняются с пустым полем `user` (`SET_NULL`). При удалении события его
+строки меню удаляются каскадно. `PROTECT` защищает ингредиенты в рецептах
+и блюда, включённые в меню. Обратные связи доступны как `organizer.events`,
+`dish.events` и `ingredient.dishes`.
 
-Импорт: `python -m db.import_json`. Он **заменяет все данные SQL-базы**
-снимком JSON в одной транзакции, поэтому повторный запуск не создаёт дублей.
-Изменения, внесённые вручную в SQLite, будут заменены. Ошибка приводит
-к rollback; исходные JSON не изменяются. Порядок: пользователи и ингредиенты,
-блюда, события, состав рецептов, меню. Вставки выполняются executemany,
-значения передаются через `?`, изменения сохраняются commit.
-Результат импорта: 2 пользователя, 17 ингредиентов, 6 блюд, 3 события,
-19 связей состава и 9 связей меню.
+Миграции `dishes/0001_initial` и `events/0001_initial` создают таблицы
+в `db.sqlite3`. Команда `python manage.py import_pr7` читает
+`data/menu.sqlite` в режиме только чтения и записывает данные через ORM
+в одной транзакции. Она сохраняет ID и все связи. Повторный импорт того же
+снимка не создаёт дублей. Конфликт с изменёнными данными откатывает перенос.
+Другой снимок можно указать через `--source путь/к/menu.sqlite`.
 
-Для отдельной базы: `python -m db.import_json --database data/demo.sqlite`.
-В тестах путь можно задать настройкой `MENU_DATABASE`. Сервер не импортирует
-JSON автоматически: изменение SQLite сразу видно при обновлении страницы,
-изменение JSON влияет на веб только после явного импорта.
+SQL-схема, запросы и загрузчик JSON из ПР7 остаются в `sql/` и `db/`
+для воспроизведения исходной базы. Сайт читает только таблицы Django.
 
-| Запрос в queries.sql | Использование |
-| --- | --- |
-| dishes, events | два списка объектов, страницы каталога и событий |
-| dish_search, event_search | WHERE, формы поиска в каталогах |
-| composition, menus | JOIN, состав блюд и меню в карточках |
-| dish_totals, event_totals | COUNT, SUM, MIN, MAX, AVG на странице статистики |
-| categories, popularity | GROUP BY, категории и число событий для каждого блюда, включая нулевое |
-| frequent | HAVING, блюда как минимум в двух событиях |
-| available | NOT IN, JOIN, WHERE, ORDER BY, LIMIT и OFFSET для подбора по дате |
+### ORM в представлениях
 
-Примеры: `/dishes/?type=десерт`, `/dishes/?q=салат`,
-`/events/?date=2026-12-31&min_guests=6`,
-`/dishes/available/?date=2026-09-20`.
-Поиск названия учитывает регистр Unicode. Неверная дата или число гостей
-дают HTTP 400 с пояснением. Пустая выборка показывает сообщение.
-Подбор исключает блюда из всех событий на дату: это аналог поиска свободных
-помещений из методички, адаптированный к разнообразию меню; ограничений
-на повторное приготовление блюд система не устанавливает.
+| № | Выборка | Где используется |
+| --- | --- | --- |
+| 1 | `Dish.objects.all()` | каталог |
+| 2 | `filter(dish_type=...)` | тип блюда |
+| 3 | `StrIndex` и `filter(match__gt=0)` | поиск по части названия с учётом регистра |
+| 4 | `filter(ingredients__name__icontains=...).distinct()` | поиск по связанному ингредиенту |
+| 5 | `values("dish_type").distinct().order_by("dish_type")` | варианты фильтра |
+| 6 | `filter(pk=...).first()` | карточка блюда |
+| 7 | `servings.select_related("ingredient")` | состав блюда |
+| 8 | `exclude(events__event_date=...)` | подбор блюд по дате |
+| 9 | `select_related("user").annotate(menu_count=Count("menu"))` | список событий и статус меню |
+| 10 | `filter(event_date=..., guests__gte=...)` | дата и число гостей |
+| 11 | `filter(guests__gte=...)` | минимум гостей без даты |
+| 12 | `filter(Q(name__icontains=...) \| Q(user__name__icontains=...))` | поиск по событию или организатору |
+| 13 | `order_by(...)` с разрешёнными полями | сортировка по дате, гостям или организатору |
+| 14 | `select_related("user").prefetch_related(...).get(pk=...)` | событие, меню и нормы |
+| 15 | `Dish.objects.aggregate(...)` | число блюд и типов |
+| 16 | `Event.objects.aggregate(Count, Sum, Min, Max, Avg)` | сводка по гостям |
+| 17 | `values("dish_type").annotate(total=Count("id"))` | группировка блюд по типу |
+| 18 | `values("id", "name").annotate(total=Count("events"))` | популярность, включая блюда без событий |
+| 19 | `filter(total__gte=2)` | блюда в меню нескольких событий |
 
-Проверка SQL в SQLite CLI: `sqlite3 data/menu.sqlite`, затем `.read sql/schema.sql`.
-Для запросов с `?` задайте `.parameter init` и `.parameter set ?1 значение`
-(и остальные параметры по порядку), затем выполните нужный запрос.
-В среде без отдельного sqlite3 CLI доступен CLI Python 3.12+:
-`python -m sqlite3 data/menu.sqlite "SELECT COUNT(*) FROM dishes;"`.
-Для проверки структуры: `PRAGMA table_info(events);`,
-`PRAGMA foreign_key_list(event_dishes);`, `PRAGMA foreign_key_check;`.
+`Paginator` разбивает список событий и подбор блюд на страницы по 10 записей.
+Ссылки сохраняют GET-параметры через тег `querystring`. Некорректный формат
+даты, числа гостей или страницы даёт HTTP 400, отсутствующий объект — HTTP 404.
+Номер за пределами результатов открывает последнюю страницу. Для
+неизвестной сортировки используется порядок по умолчанию.
 
-Архитектура ПР7: SQLite → SQL → sqlite3.Row → предметные объекты / context
-→ Django templates → браузер. Прежний путь JSON → storage → классы
-→ консольный интерфейс сохранён для сравнения.
+### CRUD и выгрузка
+
+Запустите `python manage.py createsuperuser` и откройте `/admin/` для
+создания, просмотра, изменения и удаления записей. Состав блюда и меню
+редактируются в карточках блюда и события. Пример в `python manage.py shell`:
+
+```python
+from events.models import Event
+
+event = Event.objects.create(name="Демонстрация", event_date="2026-12-20", guests=4)
+event = Event.objects.get(pk=event.pk)
+event.guests = 8
+event.save(update_fields=["guests"])
+event.refresh_from_db()
+assert event.guests == 8
+event.delete()
+```
+
+Выгрузка предметных данных: `python manage.py dumpdata dishes events --indent 2`.

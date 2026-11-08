@@ -5,12 +5,12 @@
     <article class="card shadow-sm">
       <div class="card-body">
         <h1 class="h3">{{ dish.name }}</h1>
-        <p><strong>ID:</strong> {{ dish.dish_id }}</p>
+        <p><strong>ID:</strong> {{ dish.pk }}</p>
         <p><strong>Тип:</strong> {{ dish.dish_type }}</p>
         <h2 class="h5">Ингредиенты</h2>
         <ul class="list-group">
-          {% for ingredient in dish.ingredients %}
-            <li class="list-group-item">{{ ingredient.name }} — {{ ingredient.grams_for_guest }} г на гостя</li>
+          {% for serving in servings %}
+            <li class="list-group-item">{{ serving.ingredient.name }} — {{ serving.grams_for_guest }} г на гостя</li>
           {% empty %}
             <li class="list-group-item">Ингредиенты не указаны.</li>
           {% endfor %}

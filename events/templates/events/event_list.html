@@ -1,24 +1,38 @@
 {% extends "base.html" %}
-{% block title %}События — Праздничное меню{% endblock %}
+{% block title %}События — Праздничное меню  {% include "includes/pagination.html" %}
+{% endblock %}
 {% block content %}
   <h1>События</h1>
   <form method="get" class="row g-2 mb-3">
     <div class="col-md-4"><label for="date">Дата</label><input id="date" name="date" type="date" value="{{ selected_date }}" class="form-control"></div>
     <div class="col-md-4"><label for="min_guests">Минимум гостей</label><input id="min_guests" name="min_guests" type="number" min="0" max="1000000" value="{{ min_guests }}" class="form-control"></div>
     <div class="col-md-4 align-self-end"><button class="btn btn-primary">Найти</button> <a href="{% url 'events:events' %}">Сбросить</a></div>
+    <div class="col-md-6">
+      <label for="q">Название события или организатор</label>
+      <input class="form-control" id="q" name="q" value="{{ q }}">
+    </div>
+    <div class="col-md-6">
+      <label for="sort">Сортировка</label>
+      <select class="form-select" id="sort" name="sort">
+        <option value="date">По дате</option>
+        <option value="guests" {% if sort == "guests" %}selected{% endif %}>По числу гостей</option>
+        <option value="organizer" {% if sort == "organizer" %}selected{% endif %}>По организатору</option>
+      </select>
+    </div>
   </form>
   {% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
-  <p>Всего событий: {{ events|length }}</p>
-  {% for row in events %}
+  <p>Всего событий: {{ page_obj.paginator.count|default_if_none:0 }}</p>
+  {% for event in events %}
     <article class="card mb-3">
       <div class="card-body">
-        <h2 class="h5"><a href="{% url 'events:event_detail' row.event.event_id %}">{{ row.event.name|default:"Без названия" }}</a></h2>
-        <p>ID: {{ row.event.event_id }} · Дата: {{ row.date|date:"d.m.Y" }} · Гостей: {{ row.event.guests }}</p>
-        <p>Пользователь: {{ row.event.user.name|default:"не указан" }}</p>
-        {% include "events/includes/event_status.html" with event=row.event %}
+        <h2 class="h5"><a href="{% url 'events:event_detail' event.pk %}">{{ event.name|default:"Без названия" }}</a></h2>
+        <p>ID: {{ event.pk }} · Дата: {{ event.event_date|date:"d.m.Y" }} · Гостей: {{ event.guests }}</p>
+        <p>Пользователь: {{ event.user.name|default:"не указан" }}</p>
+        {% include "events/includes/event_status.html" with menu_count=event.menu_count %}
       </div>
     </article>
   {% empty %}
     <p>События не найдены.</p>
   {% endfor %}
+  {% include "includes/pagination.html" %}
 {% endblock %}

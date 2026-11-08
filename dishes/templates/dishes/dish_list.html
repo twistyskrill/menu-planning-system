@@ -3,9 +3,20 @@
 {% block content %}
   <h1>Блюда</h1>
   <form method="get" class="row g-2 mb-3">
-    <div class="col-md-5"><label for="q">Название (с учётом регистра)</label><input id="q" name="q" value="{{ q }}" class="form-control"></div>
+    <div class="col-md-5"><label for="q">Название</label><input id="q" name="q" value="{{ q }}" class="form-control"></div>
     <div class="col-md-4"><label for="type">Тип блюда</label><select id="type" name="type" class="form-select"><option value="">Все типы</option>{% for item in categories %}<option value="{{ item.dish_type }}" {% if selected_type == item.dish_type %}selected{% endif %}>{{ item.dish_type }}</option>{% endfor %}</select></div>
     <div class="col-md-3 align-self-end"><button class="btn btn-primary">Найти</button> <a href="{% url 'dishes:dishes' %}">Сбросить</a></div>
+    <div class="col-md-6">
+      <label for="ingredient">Ингредиент</label>
+      <input class="form-control" id="ingredient" name="ingredient" value="{{ ingredient }}">
+    </div>
+    <div class="col-md-6">
+      <label for="sort">Сортировка</label>
+      <select class="form-select" id="sort" name="sort">
+        <option value="id">По номеру</option>
+        <option value="name" {% if sort == "name" %}selected{% endif %}>По названию</option>
+      </select>
+    </div>
   </form>
   <p>Всего блюд: {{ dishes|length }}</p>
   {% for dish in dishes %}

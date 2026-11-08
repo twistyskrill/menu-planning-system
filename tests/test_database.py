@@ -1,26 +1,25 @@
 """Проверки переноса, связей, SQL и сквозного отображения данных ПР7."""
 import json
-import os
 import shutil
 import sqlite3
 
-import django
 import pytest
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "menu_project.settings")
-django.setup()
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import Client
 
-from django.test import Client, override_settings  # noqa: E402
-from db.database import BASE_DIR, connect, initialize, query  # noqa: E402
-from db.import_json import import_json  # noqa: E402
+from db.database import BASE_DIR, connect
+from db.import_json import import_json
+from dishes.models import Dish, DishIngredient, Ingredient
+from events.models import Event, EventDish, Organizer
 
 
 @pytest.fixture
 def database(tmp_path):
     path = tmp_path / "menu.sqlite"
     import_json(database_path=path)
-    with override_settings(MENU_DATABASE=path):
-        yield path
+    return path
 
 
 def test_import_counts_and_repeat(database):
@@ -50,18 +49,14 @@ def test_invalid_import_rolls_back(database, tmp_path):
         assert conn.execute("SELECT user_id FROM events WHERE id=1").fetchone()[0] == 1  # noqa: E501
 
 
-def test_constraints_and_optional_user(database):
-    with connect(database) as conn:
-        with pytest.raises(sqlite3.IntegrityError):
-            conn.execute("INSERT INTO event_dishes VALUES (?, ?)", (1, 999))
-        conn.execute("DELETE FROM users WHERE id = ?", (1,))
-        conn.commit()
+def test_optional_organizer(seeded_orm):
+    Organizer.objects.get(pk=1).delete()
     content = Client().get("/events/1/").content.decode()
     assert "не указан" in content
     assert "огурец — 800 г" in content
 
 
-def test_filters_and_injection(database):
+def test_filters_and_injection(seeded_orm):
     client = Client()
     content = client.get("/dishes/", {"type": "десерт"}).content.decode()
     assert "Фруктовый десерт" in content
@@ -74,17 +69,13 @@ def test_filters_and_injection(database):
     assert "Новый год" in content and "Семейный ужин" not in content
 
 
-def test_available_and_statistics(database):
+def test_available_and_statistics(seeded_orm):
     client = Client()
     content = client.get("/dishes/available/", {"date": "2026-09-20"}).content.decode()  # noqa: E501
     assert "Овощной салат" not in content
     assert "Запеченная курица" not in content
     assert "Фруктовый десерт" in content
-    with connect(database) as conn:
-        assert conn.execute(query("event_totals")).fetchone()["guests"] == 17
-        assert len(conn.execute(query("frequent"), (2,)).fetchall()) == 3
-        conn.execute("INSERT INTO dishes VALUES (?, ?, ?)", (7, "Новое", "десерт"))  # noqa: E501
-        conn.commit()
+    Dish.objects.create(name="Новое", dish_type="десерт")
     assert "Новое" in client.get("/dishes/").content.decode()
     content = client.get("/events/statistics/").content.decode()
     assert "Всего гостей: 17" in content and "Новое" in content
@@ -97,30 +88,60 @@ def test_available_and_statistics(database):
     "/dishes/available/?date=2026-99-99",
     "/dishes/available/?date=2026-09-20&page=oops",
 ])
-def test_invalid_filters(database, url):
+def test_invalid_filters(seeded_orm, url):
     assert Client().get(url).status_code == 400
 
 
-def test_all_queries_in_empty_database(tmp_path):
-    path = tmp_path / "empty.sqlite"
-    initialize(path)
-    with override_settings(MENU_DATABASE=path):
-        client = Client()
-        for url in ["/dishes/", "/events/", "/events/statistics/",
-                    "/dishes/available/?date=2026-09-20"]:
-            assert client.get(url).status_code == 200
-        assert client.get("/events/1/").status_code == 404
-        content = client.get("/events/statistics/").content.decode()
-        assert "Всего гостей: 0" in content
+def test_all_queries_in_empty_database(empty_orm):
+    client = Client()
+    for url in ["/dishes/", "/events/", "/events/statistics/",
+                "/dishes/available/?date=2026-09-20"]:
+        assert client.get(url).status_code == 200
+    assert client.get("/events/1/").status_code == 404
+    content = client.get("/events/statistics/").content.decode()
+    assert "Всего гостей: 0" in content
 
 
-def test_available_pagination(database):
-    with connect(database) as conn:
-        conn.executemany("INSERT INTO dishes VALUES (?, ?, ?)", [
-            (i, "Блюдо " + str(i), "десерт") for i in range(7, 22)])
-        conn.commit()
+def test_available_pagination(seeded_orm):
+    Dish.objects.bulk_create([
+        Dish(name=f"Блюдо {i}", dish_type="десерт") for i in range(7, 22)
+    ])
     client = Client()
     first = client.get("/dishes/available/?date=2026-01-01").content.decode()
-    second = client.get("/dishes/available/?date=2026-01-01&page=2").content.decode()  # noqa: E501
+    second = client.get(
+        "/dishes/available/?date=2026-01-01&page=2"
+    ).content.decode()
     assert "Овощной салат" in first and "Далее" in first
     assert "Овощной салат" not in second and "Назад" in second
+
+
+def test_orm_import_counts_and_repeat(seeded_orm):
+    call_command("import_pr7")
+    for model, expected in [(Organizer, 2), (Ingredient, 17), (Dish, 6),
+                            (Event, 3), (DishIngredient, 19), (EventDish, 9)]:
+        assert model.objects.count() == expected
+    event = Event.objects.get(pk=1)
+    assert event.user.events.filter(pk=1).exists()
+    assert event.menu.filter(pk=1).exists()
+
+
+def test_orm_import_does_not_overwrite_conflicts(empty_orm):
+    Dish.objects.create(pk=1, name="Свое блюдо", dish_type="десерт")
+    with pytest.raises(CommandError, match="dishes, id=1"):
+        call_command("import_pr7")
+    assert Dish.objects.get(pk=1).name == "Свое блюдо"
+    assert not Organizer.objects.exists()
+
+
+def test_search_sort_and_pagination_together(seeded_orm):
+    Event.objects.bulk_create([
+        Event(name=f"Праздник {i}", event_date="2026-09-20", guests=i)
+        for i in range(1, 13)
+    ])
+    params = {"date": "2026-09-20", "q": "Праздник", "sort": "guests"}
+    first = Client().get("/events/", params)
+    content = first.content.decode()
+    assert "Праздник 12" in content and "Праздник 1<" not in content
+    assert "sort=guests&amp;page=2" in content
+    content = Client().get("/events/", {**params, "page": 2}).content.decode()
+    assert "Праздник 1<" in content and "Праздник 12" not in content
