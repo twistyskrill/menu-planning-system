@@ -5,6 +5,8 @@ from django.db.models import Count, Value
 from django.db.models.functions import StrIndex
 from django.shortcuts import render
 
+from events.models import Event
+
 from dishes.models import Dish
 
 
@@ -40,8 +42,9 @@ def dishes(request):
     })
 
 
-def dish_detail(request, dish_id: int):
-    dish = Dish.objects.filter(pk=dish_id).first()
+def dish_detail(request, dish_id=None, slug=None):
+    lookup = {"slug": slug} if slug is not None else {"pk": dish_id}
+    dish = Dish.objects.filter(**lookup).first()
     servings = (
         dish.servings.select_related("ingredient").order_by("ingredient_id")
         if dish else ()
@@ -61,7 +64,8 @@ def available(request):
             raise ValueError
         if value:
             value = date.fromisoformat(value).isoformat()
-            items = Dish.objects.exclude(events__event_date=value).annotate(
+            planned = Event.objects.active().on_date(value)
+            items = Dish.objects.exclude(events__in=planned).annotate(
                 ingredient_count=Count("ingredients")
             ).order_by("id")
             page_obj = Paginator(items, 10).get_page(page)

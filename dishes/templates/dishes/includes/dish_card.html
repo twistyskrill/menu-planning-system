@@ -1,6 +1,6 @@
 <article class="card dish-card mb-3">
   <div class="card-body">
-    <h2 class="h5"><a href="{% url 'dishes:dish_detail' dish.pk %}">{{ dish.name|default:"Без названия" }}</a></h2>
+    <h2 class="h5"><a href="{{ dish.get_absolute_url }}">{{ dish.name|default:"Без названия" }}</a></h2>
     <span class="badge text-bg-secondary">{{ dish.dish_type }}</span>
     <p class="mb-0">Ингредиентов: {{ dish.ingredient_count }}</p>
   </div>

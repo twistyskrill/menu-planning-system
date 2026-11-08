@@ -19,6 +19,33 @@
         <option value="organizer" {% if sort == "organizer" %}selected{% endif %}>По организатору</option>
       </select>
     </div>
+    <div class="col-md-4">
+      <label for="status">Статус</label>
+      <select id="status" name="status" class="form-select">
+        <option value="">Все статусы</option>
+        {% for value, label in statuses %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label for="dish">Блюдо в меню</label>
+      <select id="dish" name="dish" class="form-select">
+        <option value="">Все блюда</option>
+        {% for id, name in dish_options %}
+          <option value="{{ id }}" {% if dish_id == id|stringformat:"s" %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label for="organizer">Организатор</label>
+      <select id="organizer" name="organizer" class="form-select">
+        <option value="">Все организаторы</option>
+        {% for id, name in organizers %}
+          <option value="{{ id }}" {% if organizer_id == id|stringformat:"s" %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
   </form>
   {% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
   <p>Всего событий: {{ page_obj.paginator.count|default_if_none:0 }}</p>
@@ -27,6 +54,7 @@
       <div class="card-body">
         <h2 class="h5"><a href="{% url 'events:event_detail' event.pk %}">{{ event.name|default:"Без названия" }}</a></h2>
         <p>ID: {{ event.pk }} · Дата: {{ event.event_date|date:"d.m.Y" }} · Гостей: {{ event.guests }}</p>
+        <p>Статус: {{ event.get_status_display }}</p>
         <p>Пользователь: {{ event.user.name|default:"не указан" }}</p>
         {% include "events/includes/event_status.html" with menu_count=event.menu_count %}
       </div>

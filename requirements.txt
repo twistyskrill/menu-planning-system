@@ -1,3 +1,4 @@
 pytest
 flake8
 Django==5.2.*
+django-debug-toolbar==6.2.0

@@ -5,6 +5,7 @@
 <div class="card mb-3"><div class="card-body">
   <p>Блюд: {{ dish_totals.total }} · Типов блюд: {{ dish_totals.types }}</p>
   <p>Событий: {{ event_totals.total }} · Всего гостей: {{ event_totals.guest_total }}</p>
+  <p>Запланировано: {{ event_totals.active }} · Отменено: {{ event_totals.cancelled }} · Завершено: {{ event_totals.completed }}</p>
   <p>Гостей на событие: минимум {{ event_totals.minimum }}, максимум {{ event_totals.maximum }}, в среднем {{ event_totals.average|floatformat:1 }}</p>
 </div></div>
 <h2 class="h4">Блюда по типам</h2>
