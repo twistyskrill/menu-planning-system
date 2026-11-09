@@ -9,5 +9,6 @@ app_name = "dishes"
 urlpatterns = [
     path("", views.dishes, name="dishes"),
     path("available/", views.available, name="available"),
+    path("slug/<str:slug>/", views.dish_detail, name="dish_by_slug"),
     path("<int:dish_id>/", views.dish_detail, name="dish_detail"),
 ]

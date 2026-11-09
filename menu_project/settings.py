@@ -1,4 +1,5 @@
 """Настройки Django-проекта планирования меню."""
+import os
 from pathlib import Path
 
 
@@ -65,4 +66,11 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+# SQL-панель включается явно для локальной отладки.
+ENABLE_DEBUG_TOOLBAR = DEBUG and os.getenv("MENU_DEBUG_TOOLBAR") == "1"
+if ENABLE_DEBUG_TOOLBAR:
+    INSTALLED_APPS += ["debug_toolbar"]
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
+    INTERNAL_IPS = ["127.0.0.1", "::1"]
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
